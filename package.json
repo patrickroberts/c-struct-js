@@ -1,7 +1,7 @@
 {
   "name": "c-struct-js",
   "version": "0.0.0",
-  "description": "Extended class of DataView inspired by C structs",
+  "description": "UMD module for DataView extension inspired by C structs",
   "main": "umd/struct.min.js",
   "scripts": {
     "build": "gulp",
@@ -23,7 +23,6 @@
     ]
   ],
   "devDependencies": {
-    "babel-core": "^6.26.0",
     "babel-eslint": "^8.0.0",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
     "babel-plugin-transform-class-properties": "^6.24.1",
@@ -35,6 +34,8 @@
     "gulp-sourcemaps": "^2.6.1",
     "gulp-uglify": "^3.0.0",
     "gulp-util": "^3.0.8",
+    "jsdoc-babel": "^0.3.0",
+    "jsdoc-to-markdown": "^3.0.0",
     "require-dir": "^0.3.2",
     "standard": "^10.0.3",
     "vinyl-buffer": "^1.0.0",

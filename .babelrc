@@ -5,6 +5,6 @@
   "plugins": [
     "transform-new-target",
     ["transform-builtin-extend", { "globals": ["DataView"] }],
-    ["transform-class-properties", { "spec": true }],
+    ["transform-class-properties", { "spec": true }]
   ]
 }
