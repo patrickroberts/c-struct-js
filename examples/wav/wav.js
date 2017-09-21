@@ -8,11 +8,6 @@ class Word extends Struct.extend(
   }
 }
 
-const Chunk = Struct.extend(
-  { name: 'id', type: Word },
-  { name: 'size', type: 'Uint32', option: true }
-)
-
 class Uint16LE extends Struct.extend(
   { name: 'uint16', type: 'Uint16', option: true }
 ) {
@@ -28,6 +23,11 @@ class Uint32LE extends Struct.extend(
     this.uint32 = number
   }
 }
+
+const Chunk = Struct.extend(
+  { name: 'id', type: Word },
+  { name: 'size', type: Uint32LE }
+)
 
 module.exports = class WAV extends Struct.extend(
   { name: 'chunk', type: Chunk },
