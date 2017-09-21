@@ -52,16 +52,16 @@ define(['c-struct-js'], (Struct) => { ... })
 
 * [Struct](#Struct) ⇐ [<code>DataView</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView)
     * [new Struct(buffer, [byteOffset])](#new_Struct_new)
-    * _instance_
-        * [.getString(byteOffset, byteLength, [encoding])](#Struct+getString) ⇒ <code>string</code>
-        * [.setString(byteOffset, byteLength, value, [encoding])](#Struct+setString)
-        * [.set(typedArray, [byteOffset])](#Struct+set)
     * _static_
         * [.byteLength](#Struct.byteLength) : <code>number</code>
         * [.extend(...descriptors)](#Struct.extend) ⇒ <code>constructor</code>
         * [.from(value, [byteOffset])](#Struct.from) ⇒ [<code>Struct</code>](#Struct)
         * [.isStruct(value)](#Struct.isStruct) ⇒ <code>boolean</code>
         * [.union(...Classes)](#Struct.union) ⇒ <code>constructor</code>
+    * _instance_
+        * [.getString(byteOffset, byteLength, [encoding])](#Struct+getString) ⇒ <code>string</code>
+        * [.setString(byteOffset, byteLength, value, [encoding])](#Struct+setString)
+        * [.set(typedArray, [byteOffset])](#Struct+set)
 
 <a name="new_Struct_new"></a>
 
@@ -71,57 +71,6 @@ define(['c-struct-js'], (Struct) => { ... })
 | --- | --- | --- | --- |
 | buffer | [<code>ArrayBuffer</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) |  | An instance of ArrayBuffer to view. |
 | [byteOffset] | <code>number</code> | <code>0</code> | Byte offset at which to view ArrayBuffer. |
-
-**Example**  
-```js
-// create 3 classesconst Int32 = Struct.extend({ name: 'i32', type: 'Int32' })const Uint32 = Struct.extend({ name: 'u32', type: 'Uint32' })const Utf8 = Struct.extend({  name: 'str',  type: 'String',  byteLength: 4,  option: 'binary'})// create a union of the 3 classesconst Union = Struct.union(Int32, Uint32, Utf8)// create an instance of the union to view an array bufferlet union = new Union(new ArrayBuffer(Union.byteLength))// set the string using binary encodingunion.str = 'ßé+å'// check uint32 valueconsole.log(union.u32.toString(16))// reverse bytesunion.setUint32(0, union.getUint32(0, true), false)// print all membersfor (const key in union) console.log(key, union[key].toString(16))
-```
-<a name="Struct+getString"></a>
-
-### struct.getString(byteOffset, byteLength, [encoding]) ⇒ <code>string</code>
-Gets string with byteLength and encoding from viewed ArrayBuffer at byteOffset.Depending on data and encoding, returned string may have different length than byteLength.
-
-**Kind**: instance method of [<code>Struct</code>](#Struct)  
-**Throws**:
-
-- [<code>TypeError</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError) encoding must be a valid string encoding.
-
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| byteOffset | <code>number</code> |  | Byte offset within ArrayBuffer of string to read. |
-| byteLength | <code>number</code> |  | Byte length within ArrayBuffer of string to read. |
-| [encoding] | <code>string</code> | <code>&quot;utf8&quot;</code> | Encoding within ArrayBuffer of string to read. |
-
-<a name="Struct+setString"></a>
-
-### struct.setString(byteOffset, byteLength, value, [encoding])
-Sets string with byteLength and encoding to viewed ArrayBuffer at byteOffset.Depending on byteLength and encoding, set string may be truncated or padded.
-
-**Kind**: instance method of [<code>Struct</code>](#Struct)  
-**Throws**:
-
-- [<code>TypeError</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError) encoding must be a valid string encoding.
-
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| byteOffset | <code>number</code> |  | Byte offset within ArrayBuffer of string to write. |
-| byteLength | <code>number</code> |  | Byte length within ArrayBuffer of string to write. |
-| value | <code>string</code> |  | Unencoded string value to write to ArrayBuffer. |
-| [encoding] | <code>string</code> | <code>&quot;utf8&quot;</code> | Encoding within ArrayBuffer of string to write. |
-
-<a name="Struct+set"></a>
-
-### struct.set(typedArray, [byteOffset])
-Sets memory in ArrayBuffer starting at byteOffset with data from typedArray.
-
-**Kind**: instance method of [<code>Struct</code>](#Struct)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| typedArray | [<code>Buffer</code>](https://nodejs.org/api/buffer.html) \| [<code>DataView</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) \| [<code>TypedArray</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray) |  | View of data to copy. |
-| [byteOffset] | <code>number</code> | <code>0</code> | Byte offset within ArrayBuffer at which to write. |
 
 <a name="Struct.byteLength"></a>
 
@@ -151,6 +100,10 @@ Creates a class that extends Struct with members defined by arguments.
 | [descriptors[].byteLength] | <code>number</code> | Determined using type by default. Required when type is 'String'. |
 | [descriptors[].byteOffset] | <code>number</code> | Determined using order of descriptors by default. |
 
+**Example**  
+```js
+const Struct = require('c-struct-js')// Implementing RIFF-style chunk headersclass Word extends Struct.extend(  { name: 'word', type: 'String', byteLength: 4 }) { set (string) { this.word = string } }class Uint32LE extends Struct.extend(  { name: 'uint32', type: 'Uint32', option: true }) { set (number) { this.uint32 = number } }const Chunk = Struct.extend(  { name: 'id', type: Word },  { name: 'size', type: Uint32LE })class RIFF extends Struct.extend(  { name: 'chunk', type: Chunk },  // ...) {  constructor () {    super(new ArrayBuffer(RIFF.byteLength))    this.chunk.id = 'RIFF'    this.chunk.size = this.byteLength - this.chunk.byteLength    // ...  }}let riff = new RIFF()let ab = riff.chunk.idlet buf = Buffer.from(ab.buffer, ab.byteOffset, ab.byteLength)console.log(buf.toString())
+```
 <a name="Struct.from"></a>
 
 ### Struct.from(value, [byteOffset]) ⇒ [<code>Struct</code>](#Struct)
@@ -167,6 +120,10 @@ Creates an instance of Struct to view given value at byteOffset.
 | value | [<code>ArrayBuffer</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) \| [<code>Buffer</code>](https://nodejs.org/api/buffer.html) \| [<code>DataView</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) \| [<code>TypedArray</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray) |  | A valid ArrayBuffer or view of one. |
 | [byteOffset] | <code>number</code> | <code>0</code> | Byte offset at which to view value. |
 
+**Example**  
+```js
+// checking encoded size of WAV fileconst { promisify } = require('util')const fs = require('fs')const read = promisify(fs.read)const open = promisify(fs.open)const close = promisify(fs.close)// using Chunk from previous example// ...// bytes 36-44 contain SubChunk2 of WAV headeropen('test.wav', 'r')  .then(fd => {    return read(fd, Buffer.allocUnsafe(Chunk.byteLength), 0, Chunk.byteLength, 36)      .then((bytesRead, buffer) => close(fd).then(() => Chunk.from(buffer)))  })  .then(chunk => console.log('file size:', 44 + chunk.size))
+```
 <a name="Struct.isStruct"></a>
 
 ### Struct.isStruct(value) ⇒ <code>boolean</code>
@@ -178,6 +135,10 @@ Validates constructors that extend Struct.
 | --- | --- | --- |
 | value | <code>\*</code> | A value to test. |
 
+**Example**  
+```js
+console.log(Struct.isStruct(Struct))   // trueconsole.log(Struct.isStruct(RIFF))     // trueconsole.log(Struct.isStruct(DataView)) // false - doesn't implement Structconsole.log(Struct.isStruct(riff))     // false - is instance, not class
+```
 <a name="Struct.union"></a>
 
 ### Struct.union(...Classes) ⇒ <code>constructor</code>
@@ -193,6 +154,69 @@ Creates a union class that extends Struct with members of all Classes.
 | --- | --- | --- |
 | ...Classes | <code>constructor</code> | Classes that extend Struct. |
 
+**Example**  
+```js
+// Getting surrogate pairs of utf16le encodingconst Utf16le = Struct.extend(  { name: 'code', type: 'String', byteLength: 2, option: 'utf16le' })const Utf16Pair = Struct.extend(  { name: 'lo', type: 'Uint8' },  { name: 'hi', type: 'Uint8' })class Utf16 extends Struct.union(Utf16le, Utf16Pair) {  constructor (character = '\0') {    super(new ArrayBuffer(Utf16.byteLength))    this.code = character  }}let utf16 = new Utf16('€')// € ac 20console.log(utf16.code, utf16.lo.toString(16), utf16.hi.toString(16))
+```
+<a name="Struct+getString"></a>
+
+### struct.getString(byteOffset, byteLength, [encoding]) ⇒ <code>string</code>
+Gets string with byteLength and encoding from viewed ArrayBuffer at byteOffset.Depending on data and encoding, returned string may have different length than byteLength.
+
+**Kind**: instance method of [<code>Struct</code>](#Struct)  
+**Throws**:
+
+- [<code>TypeError</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError) encoding must be a valid string encoding.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| byteOffset | <code>number</code> |  | Byte offset within ArrayBuffer of string to read. |
+| byteLength | <code>number</code> |  | Byte length within ArrayBuffer of string to read. |
+| [encoding] | <code>string</code> | <code>&quot;utf8&quot;</code> | Encoding within ArrayBuffer of string to read. |
+
+**Example**  
+```js
+// using utf16 from previous example// ...console.log(utf16.code === utf16.getString(0, 2, 'utf16le')) // true
+```
+<a name="Struct+setString"></a>
+
+### struct.setString(byteOffset, byteLength, value, [encoding])
+Sets string with byteLength and encoding to viewed ArrayBuffer at byteOffset.Depending on byteLength and encoding, set string may be truncated or padded.
+
+**Kind**: instance method of [<code>Struct</code>](#Struct)  
+**Throws**:
+
+- [<code>TypeError</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError) encoding must be a valid string encoding.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| byteOffset | <code>number</code> |  | Byte offset within ArrayBuffer of string to write. |
+| byteLength | <code>number</code> |  | Byte length within ArrayBuffer of string to write. |
+| value | <code>string</code> |  | String value to write to ArrayBuffer. |
+| [encoding] | <code>string</code> | <code>&quot;utf8&quot;</code> | Encoding within ArrayBuffer of string to write. |
+
+**Example**  
+```js
+// using utf16 from previous example// ...utf16.setString(0, 2, '$', 'utf16le')// $ 24 0console.log(utf16.code, utf16.lo.toString(16), utf16.hi.toString(16))
+```
+<a name="Struct+set"></a>
+
+### struct.set(typedArray, [byteOffset])
+Sets memory in ArrayBuffer starting at byteOffset with data from typedArray.
+
+**Kind**: instance method of [<code>Struct</code>](#Struct)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| typedArray | [<code>Buffer</code>](https://nodejs.org/api/buffer.html) \| [<code>DataView</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) \| [<code>TypedArray</code>](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray) |  | View of data to copy. |
+| [byteOffset] | <code>number</code> | <code>0</code> | Byte offset within ArrayBuffer at which to write. |
+
+**Example**  
+```js
+// reading header of WAV file into instance of RIFF// using RIFF from previous example// ...let riff = new RIFF()open('test.wav', 'r')  .then(fd => {    return read(fd, Buffer.allocUnsafe(RIFF.byteLength), 0, RIFF.byteLength, 0)      .then((bytesRead, buffer) => close(fd).then(() => buffer))  })  .then(buffer => {    riff.set(buffer)    // populated with header bytes from test.wav    // ...  })
+```
 
 ## License
 

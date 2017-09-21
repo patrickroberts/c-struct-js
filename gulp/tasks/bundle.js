@@ -14,7 +14,7 @@ const browser = browserify({
 })
 
 gulp.task('bundle', () => {
-  browser.bundle()
+  return browser.bundle()
     .pipe(source('struct.min.js'))
     .pipe(buffer())
     .pipe(sourcemaps.init({ loadMaps: true }))

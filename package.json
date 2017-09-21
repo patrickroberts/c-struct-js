@@ -1,11 +1,10 @@
 {
   "name": "c-struct-js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "UMD module for DataView extension inspired by C structs",
   "main": "umd/struct.min.js",
   "directories": {
-    "lib": "src",
-    "example": "examples"
+    "lib": "src"
   },
   "scripts": {
     "build": "gulp",

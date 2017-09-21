@@ -35,29 +35,6 @@ import mergeClasses from './merge'
  *
  * @param {external:ArrayBuffer} buffer - An instance of ArrayBuffer to view.
  * @param {number} [byteOffset=0] - Byte offset at which to view ArrayBuffer.
- *
- * @example
- * // create 3 classes
- * const Int32 = Struct.extend({ name: 'i32', type: 'Int32' })
- * const Uint32 = Struct.extend({ name: 'u32', type: 'Uint32' })
- * const Utf8 = Struct.extend({
- *   name: 'str',
- *   type: 'String',
- *   byteLength: 4,
- *   option: 'binary'
- * })
- * // create a union of the 3 classes
- * const Union = Struct.union(Int32, Uint32, Utf8)
- * // create an instance of the union to view an array buffer
- * let union = new Union(new ArrayBuffer(Union.byteLength))
- * // set the string using binary encoding
- * union.str = 'ßé+å'
- * // check uint32 value
- * console.log(union.u32.toString(16))
- * // reverse bytes
- * union.setUint32(0, union.getUint32(0, true), false)
- * // print all members
- * for (const key in union) console.log(key, union[key].toString(16))
  */
 export default class Struct extends DataView {
   /**
@@ -91,6 +68,42 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @static
+   *
+   * @example
+   * const Struct = require('c-struct-js')
+   *
+   * // Implementing RIFF-style chunk headers
+   * class Word extends Struct.extend(
+   *   { name: 'word', type: 'String', byteLength: 4 }
+   * ) { set (string) { this.word = string } }
+   *
+   * class Uint32LE extends Struct.extend(
+   *   { name: 'uint32', type: 'Uint32', option: true }
+   * ) { set (number) { this.uint32 = number } }
+   *
+   * const Chunk = Struct.extend(
+   *   { name: 'id', type: Word },
+   *   { name: 'size', type: Uint32LE }
+   * )
+   *
+   * class RIFF extends Struct.extend(
+   *   { name: 'chunk', type: Chunk },
+   *   // ...
+   * ) {
+   *   constructor () {
+   *     super(new ArrayBuffer(RIFF.byteLength))
+   *
+   *     this.chunk.id = 'RIFF'
+   *     this.chunk.size = this.byteLength - this.chunk.byteLength
+   *     // ...
+   *   }
+   * }
+   *
+   * let riff = new RIFF()
+   * let ab = riff.chunk.id
+   * let buf = Buffer.from(ab.buffer, ab.byteOffset, ab.byteLength)
+   *
+   * console.log(buf.toString())
    */
   static extend (...descriptors) {
     return descriptors.reduce(defineProperty, class extends this {
@@ -113,6 +126,25 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @static
+   *
+   * @example
+   * // checking encoded size of WAV file
+   * const { promisify } = require('util')
+   * const fs = require('fs')
+   * const read = promisify(fs.read)
+   * const open = promisify(fs.open)
+   * const close = promisify(fs.close)
+   *
+   * // using Chunk from previous example
+   * // ...
+   *
+   * // bytes 36-44 contain SubChunk2 of WAV header
+   * open('test.wav', 'r')
+   *   .then(fd => {
+   *     return read(fd, Buffer.allocUnsafe(Chunk.byteLength), 0, Chunk.byteLength, 36)
+   *       .then((bytesRead, buffer) => close(fd).then(() => Chunk.from(buffer)))
+   *   })
+   *   .then(chunk => console.log('file size:', 44 + chunk.size))
    */
   static from (value, byteOffset = 0) {
     if (!ArrayBuffer.isView(value) && !(value instanceof ArrayBuffer)) {
@@ -134,6 +166,12 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @static
+   *
+   * @example
+   * console.log(Struct.isStruct(Struct))   // true
+   * console.log(Struct.isStruct(RIFF))     // true
+   * console.log(Struct.isStruct(DataView)) // false - doesn't implement Struct
+   * console.log(Struct.isStruct(riff))     // false - is instance, not class
    */
   static isStruct (value) {
     return typeof value === 'function' && Object.create(value.prototype) instanceof Struct
@@ -153,6 +191,30 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @static
+   *
+   * @example
+   * // Getting surrogate pairs of utf16le encoding
+   * const Utf16le = Struct.extend(
+   *   { name: 'code', type: 'String', byteLength: 2, option: 'utf16le' }
+   * )
+   *
+   * const Utf16Pair = Struct.extend(
+   *   { name: 'lo', type: 'Uint8' },
+   *   { name: 'hi', type: 'Uint8' }
+   * )
+   *
+   * class Utf16 extends Struct.union(Utf16le, Utf16Pair) {
+   *   constructor (character = '\0') {
+   *     super(new ArrayBuffer(Utf16.byteLength))
+   *
+   *     this.code = character
+   *   }
+   * }
+   *
+   * let utf16 = new Utf16('€')
+   *
+   * // € ac 20
+   * console.log(utf16.code, utf16.lo.toString(16), utf16.hi.toString(16))
    */
   static union (...Classes) {
     return Classes.reduce(mergeClasses, this.extend())
@@ -179,6 +241,12 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @instance
+   *
+   * @example
+   * // using utf16 from previous example
+   * // ...
+   *
+   * console.log(utf16.code === utf16.getString(0, 2, 'utf16le')) // true
    */
   getString (byteOffset, byteLength, encoding = 'utf8') {
     return Buffer
@@ -194,7 +262,7 @@ export default class Struct extends DataView {
    *
    * @param {number} byteOffset - Byte offset within ArrayBuffer of string to write.
    * @param {number} byteLength - Byte length within ArrayBuffer of string to write.
-   * @param {string} value - Unencoded string value to write to ArrayBuffer.
+   * @param {string} value - String value to write to ArrayBuffer.
    * @param {string} [encoding=utf8] - Encoding within ArrayBuffer of string to write.
    *
    * @throws {external:TypeError} encoding must be a valid string encoding.
@@ -202,10 +270,19 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @instance
+   *
+   * @example
+   * // using utf16 from previous example
+   * // ...
+   *
+   * utf16.setString(0, 2, '$', 'utf16le')
+   *
+   * // $ 24 0
+   * console.log(utf16.code, utf16.lo.toString(16), utf16.hi.toString(16))
    */
   setString (byteOffset, byteLength, value, encoding = 'utf8') {
     Buffer
-      .from(value, encoding.replace(/[\W_]/g, '').toLowerCase())
+      .from(String(value), encoding.replace(/[\W_]/g, '').toLowerCase())
       .copy(Buffer.from(this.buffer, this.byteOffset + byteOffset, byteLength))
   }
 
@@ -220,8 +297,26 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @instance
+   *
+   * @example
+   * // reading header of WAV file into instance of RIFF
+   *
+   * // using RIFF from previous example
+   * // ...
+   * let riff = new RIFF()
+   *
+   * open('test.wav', 'r')
+   *   .then(fd => {
+   *     return read(fd, Buffer.allocUnsafe(RIFF.byteLength), 0, RIFF.byteLength, 0)
+   *       .then((bytesRead, buffer) => close(fd).then(() => buffer))
+   *   })
+   *   .then(buffer => {
+   *     riff.set(buffer)
+   *     // populated with header bytes from test.wav
+   *     // ...
+   *   })
    */
   set (typedArray, byteOffset = 0) {
-    new Uint8Array(this.buffer, this.byteOffset + byteOffset).set(typedArray)
+    new Uint8Array(this.buffer, this.byteOffset + byteOffset, this.byteLength).set(typedArray)
   }
 }
