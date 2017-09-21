@@ -7,7 +7,7 @@ const writeFile = promisify(fs.writeFile)
 const gulp = require('gulp')
 const jsdoc2md = require('jsdoc-to-markdown')
 
-gulp.task('docs', async () => {
+gulp.task('docs', () => {
   return readFile('gulp/template.hbs')
     .then(template => jsdoc2md
       .render({

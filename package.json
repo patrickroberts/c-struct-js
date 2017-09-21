@@ -1,8 +1,12 @@
 {
   "name": "c-struct-js",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "UMD module for DataView extension inspired by C structs",
   "main": "umd/struct.min.js",
+  "directories": {
+    "lib": "src",
+    "example": "examples"
+  },
   "scripts": {
     "build": "gulp",
     "git": "git push origin master",
@@ -38,6 +42,7 @@
     "babel-preset-es2015": "^6.24.1",
     "babelify": "^7.3.0",
     "browserify": "^14.4.0",
+    "buffer": "^5.0.7",
     "gulp": "^3.9.1",
     "gulp-sourcemaps": "^2.6.1",
     "gulp-uglify": "^3.0.0",
@@ -48,8 +53,5 @@
     "standard": "^10.0.3",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
-  },
-  "dependencies": {
-    "buffer": "^5.0.7"
   }
 }

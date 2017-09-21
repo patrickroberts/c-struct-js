@@ -74,7 +74,7 @@ define(['c-struct-js'], (Struct) => { ... })
 
 **Example**  
 ```js
-// create 3 classesconst Int32 = Struct.extend({ name: 'i32', type: 'Int32' })const Uint32 = Struct.extend({ name: 'u32', type: 'Uint32' })const Utf8 = Struct.extend({ name: 'str', type: 'String', byteLength: 4, option: 'binary' })// create a union of the 3 classesconst Union = Struct.union(Int32, Uint32, Utf8)// create an instance of the union to view an array bufferlet union = new Union(new ArrayBuffer(Union.byteLength))// set the string using binary encodingunion.str = 'ßé+å'// check uint32 valueconsole.log(union.u32.toString(16))// reverse bytesunion.setUint32(0, union.getUint32(0, true), false)// print all membersfor (const key in union) console.log(key, union[key].toString(16))
+// create 3 classesconst Int32 = Struct.extend({ name: 'i32', type: 'Int32' })const Uint32 = Struct.extend({ name: 'u32', type: 'Uint32' })const Utf8 = Struct.extend({  name: 'str',  type: 'String',  byteLength: 4,  option: 'binary'})// create a union of the 3 classesconst Union = Struct.union(Int32, Uint32, Utf8)// create an instance of the union to view an array bufferlet union = new Union(new ArrayBuffer(Union.byteLength))// set the string using binary encodingunion.str = 'ßé+å'// check uint32 valueconsole.log(union.u32.toString(16))// reverse bytesunion.setUint32(0, union.getUint32(0, true), false)// print all membersfor (const key in union) console.log(key, union[key].toString(16))
 ```
 <a name="Struct+getString"></a>
 

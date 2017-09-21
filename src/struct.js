@@ -40,7 +40,12 @@ import mergeClasses from './merge'
  * // create 3 classes
  * const Int32 = Struct.extend({ name: 'i32', type: 'Int32' })
  * const Uint32 = Struct.extend({ name: 'u32', type: 'Uint32' })
- * const Utf8 = Struct.extend({ name: 'str', type: 'String', byteLength: 4, option: 'binary' })
+ * const Utf8 = Struct.extend({
+ *   name: 'str',
+ *   type: 'String',
+ *   byteLength: 4,
+ *   option: 'binary'
+ * })
  * // create a union of the 3 classes
  * const Union = Struct.union(Int32, Uint32, Utf8)
  * // create an instance of the union to view an array buffer
@@ -177,7 +182,7 @@ export default class Struct extends DataView {
    */
   getString (byteOffset, byteLength, encoding = 'utf8') {
     return Buffer
-      .from(this.buffer, byteOffset, byteLength)
+      .from(this.buffer, this.byteOffset + byteOffset, byteLength)
       .toString(encoding.replace(/[\W_]/g, '').toLowerCase())
   }
 
@@ -201,7 +206,7 @@ export default class Struct extends DataView {
   setString (byteOffset, byteLength, value, encoding = 'utf8') {
     Buffer
       .from(value, encoding.replace(/[\W_]/g, '').toLowerCase())
-      .copy(Buffer.from(this.buffer, byteOffset, byteLength))
+      .copy(Buffer.from(this.buffer, this.byteOffset + byteOffset, byteLength))
   }
 
   /**
@@ -217,6 +222,6 @@ export default class Struct extends DataView {
    * @instance
    */
   set (typedArray, byteOffset = 0) {
-    new Uint8Array(this.buffer, byteOffset).set(typedArray)
+    new Uint8Array(this.buffer, this.byteOffset + byteOffset).set(typedArray)
   }
 }
