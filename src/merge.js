@@ -4,7 +4,13 @@ export default function mergeClasses (Union, Class) {
       throw new TypeError(`Union contains conflicting key ${key}`)
     }
 
-    Object.defineProperty(Union.prototype, key, Object.getOwnPropertyDescriptor(Class.prototype, key))
+    let proto = Class.prototype
+
+    while (!proto.hasOwnProperty(key)) {
+      proto = Object.getPrototypeOf(proto)
+    }
+
+    Object.defineProperty(Union.prototype, key, Object.getOwnPropertyDescriptor(proto, key))
   }
 
   Union.byteLength = Math.max(Union.byteLength, Class.byteLength)

@@ -63,7 +63,7 @@ function length (type) {
 
 function createGetter (type) {
   return this.isStruct(type) ? function getter (byteOffset) {
-    return type.from(this, this.byteOffset + byteOffset)
+    return type.from(this, this.byteOffset + byteOffset).get()
   } : this.prototype[`get${type}`]
 }
 

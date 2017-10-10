@@ -9,11 +9,6 @@ import mergeClasses from './merge'
  */
 
 /**
- * @external Buffer
- * @see {@link https://nodejs.org/api/buffer.html|Buffer}
- */
-
-/**
  * @external DataView
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView|DataView}
  */
@@ -45,8 +40,26 @@ export default class Struct extends DataView {
    * @memberof Struct
    *
    * @static
+   *
+   * @readonly
    */
   static byteLength = 0
+
+  /**
+   * Namespace of predefined Struct classes.
+   *
+   * @namespace types
+   */
+
+  /**
+   * Namespace of predefined types.
+   *
+   * @member {types} types
+   *
+   * @memberof Struct
+   *
+   * @static
+   */
 
   /**
    * Creates a class that extends Struct with members defined by arguments.
@@ -73,17 +86,13 @@ export default class Struct extends DataView {
    * const Struct = require('c-struct-js')
    *
    * // Implementing RIFF-style chunk headers
-   * class Word extends Struct.extend(
+   * const Word = Struct.extend(
    *   { name: 'word', type: 'String', byteLength: 4 }
-   * ) { set (string) { this.word = string } }
-   *
-   * class Uint32LE extends Struct.extend(
-   *   { name: 'uint32', type: 'Uint32', option: true }
-   * ) { set (number) { this.uint32 = number } }
+   * )
    *
    * const Chunk = Struct.extend(
    *   { name: 'id', type: Word },
-   *   { name: 'size', type: Uint32LE }
+   *   { name: 'size', type: Struct.types.Uint32LE }
    * )
    *
    * class RIFF extends Struct.extend(
@@ -93,7 +102,7 @@ export default class Struct extends DataView {
    *   constructor () {
    *     super(new ArrayBuffer(RIFF.byteLength))
    *
-   *     this.chunk.id = 'RIFF'
+   *     this.chunk.id.word = 'RIFF'
    *     this.chunk.size = this.byteLength - this.chunk.byteLength
    *     // ...
    *   }
@@ -116,7 +125,7 @@ export default class Struct extends DataView {
    *
    * @method from
    *
-   * @param {external:ArrayBuffer|external:Buffer|external:DataView|external:TypedArray} value - A valid ArrayBuffer or view of one.
+   * @param {external:ArrayBuffer|external:TypedArray} value - A valid ArrayBuffer or TypedArray.
    * @param {number} [byteOffset=0] - Byte offset at which to view value.
    *
    * @throws {external:TypeError} value must be a valid ArrayBuffer or view.
@@ -148,14 +157,14 @@ export default class Struct extends DataView {
    */
   static from (value, byteOffset = 0) {
     if (!ArrayBuffer.isView(value) && !(value instanceof ArrayBuffer)) {
-      throw new TypeError('value must be a valid ArrayBuffer or view')
+      throw new TypeError('value must be a valid ArrayBuffer or TypedArray')
     }
 
     return new this(value.buffer || value, byteOffset)
   }
 
   /**
-   * Validates constructors that extend Struct.
+   * Validates constructors that implement Struct.
    *
    * @method isStruct
    *
@@ -194,24 +203,20 @@ export default class Struct extends DataView {
    *
    * @example
    * // Getting surrogate pairs of utf16le encoding
-   * const Utf16le = Struct.extend(
+   * const UTF16LE = Struct.extend(
    *   { name: 'code', type: 'String', byteLength: 2, option: 'utf16le' }
    * )
    *
-   * const Utf16Pair = Struct.extend(
+   * const UTF16Pair = Struct.extend(
    *   { name: 'lo', type: 'Uint8' },
    *   { name: 'hi', type: 'Uint8' }
    * )
    *
-   * class Utf16 extends Struct.union(Utf16le, Utf16Pair) {
-   *   constructor (character = '\0') {
-   *     super(new ArrayBuffer(Utf16.byteLength))
+   * const UTF16 = Struct.union(Utf16le, Utf16Pair)
    *
-   *     this.code = character
-   *   }
-   * }
+   * let utf16 = new Utf16(new ArrayBuffer(UTF16.byteLength))
    *
-   * let utf16 = new Utf16('€')
+   * utf16.code = '€'
    *
    * // € ac 20
    * console.log(utf16.code, utf16.lo.toString(16), utf16.hi.toString(16))
@@ -287,11 +292,59 @@ export default class Struct extends DataView {
   }
 
   /**
+   * Default member getter when accessed as a member of a parent Struct.
+   *
+   * @method get
+   *
+   * @memberof Struct
+   *
+   * @instance
+   *
+   * @example
+   * // Better implementation for RIFF-style chunk headers
+   * class Word extends Struct.extend(
+   *   { name: 'word', type: 'String', byteLength: 4 }
+   * ) {
+   *   get () { return this.word }
+   *   set (string) { this.word = string }
+   * }
+   *
+   * const Chunk = Struct.extend(
+   *   { name: 'id', type: Word },
+   *   { name: 'size', type: Struct.types.Uint32LE }
+   * )
+   *
+   * // Other structs...
+   *
+   * class RIFF extends Struct.extend(
+   *   { name: 'chunk', type: Chunk },
+   *   // Other fields...
+   * ) {
+   *   constructor (arrayBuffer = new ArrayBuffer(RIFF.byteLength), byteOffset = 0) {
+   *     super(arrayBuffer, byteOffset)
+   *
+   *     this.chunk.id = 'RIFF'
+   *     this.chunk.size = this.byteLength - this.chunk.byteLength
+   *     // ...
+   *   }
+   * }
+   *
+   * let riff = new RIFF()
+   * let id = riff.chunk.id
+   *
+   * // 'RIFF' instead of instance of Word
+   * console.log(id)
+   */
+  get () {
+    return this
+  }
+
+  /**
    * Sets memory in ArrayBuffer starting at byteOffset with data from typedArray.
    *
    * @method set
    *
-   * @param {external:Buffer|external:DataView|external:TypedArray} typedArray - View of data to copy.
+   * @param {external:TypedArray} typedArray - View of data to copy.
    * @param {number} [byteOffset=0] - Byte offset within ArrayBuffer at which to write.
    *
    * @memberof Struct
@@ -318,5 +371,88 @@ export default class Struct extends DataView {
    */
   set (typedArray, byteOffset = 0) {
     new Uint8Array(this.buffer, this.byteOffset + byteOffset, this.byteLength).set(typedArray)
+  }
+
+  /**
+   * Initializes the next chunk of the buffer as another instance of Struct.
+   *
+   * @method next
+   *
+   * @param {constructor} [constructor=this.constructor] - The Struct class with which to initialize.
+   * @param {number} [bytePadding=0] - Amount of bytes after the end of this to begin ArrayBuffer view.
+   *
+   * @throws {external:TypeError} constructor must implement Struct.
+   *
+   * @memberof Struct
+   *
+   * @instance
+   *
+   * @example
+   * // iterating through a large dataset
+   * const readFile = promisify(fs.readFile)
+   *
+   * readFile('test.wav')
+   *   .then(buffer => {
+   *     for (let struct = new Struct.types.Uint8(buffer.buffer, 44); struct !== null; struct = struct.next()) {
+   *       // iterates through each byte of sound data
+   *       console.log(struct.uint8) // 0-255
+   *     }
+   *   })
+   */
+  next (constructor = this.constructor, bytePadding = 0) {
+    if (!Struct.isStruct(constructor)) {
+      throw new TypeError('constructor must implement Struct')
+    }
+
+    const arrayBuffer = this.buffer
+    const byteOffset = this.byteOffset + this.byteLength + bytePadding
+
+    if (byteOffset + constructor.byteLength > arrayBuffer.byteLength) {
+      return null
+    }
+
+    return constructor.from(arrayBuffer, byteOffset)
+  }
+
+  /**
+   * Initializes the previous chunk of the buffer as another instance of Struct.
+   *
+   * @method prev
+   *
+   * @param {constructor} [constructor=this.constructor] - The Struct class with which to initialize.
+   * @param {number} [bytePadding=0] - Amount of bytes before the end of this to end ArrayBuffer view.
+   *
+   * @throws {external:TypeError} constructor must implement Struct.
+   *
+   * @memberof Struct
+   *
+   * @instance
+   *
+   * @example
+   * // accessing header of first data
+   *
+   * readFile('test.wav')
+   *   .then(buffer => {
+   *     let data = new Struct.types.Uint8(buffer.buffer, 44)
+   *     // to properly initialize RIFF header at byteOffset of 0
+   *     let riff = data.prev(RIFF, data.byteOffset - Chunk.byteLength)
+   *
+   *     // 'RIFF'
+   *     console.log(riff.chunk.id)
+   *   })
+   */
+  prev (constructor = this.constructor, bytePadding = 0) {
+    if (!Struct.isStruct(constructor)) {
+      throw new TypeError('constructor must implement Struct')
+    }
+
+    const arrayBuffer = this.buffer
+    const byteOffset = this.byteOffset - bytePadding - constructor.byteLength
+
+    if (byteOffset < 0) {
+      return null
+    }
+
+    return constructor.from(arrayBuffer, byteOffset)
   }
 }
